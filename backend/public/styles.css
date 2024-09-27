@@ -1,0 +1,36 @@
+.container table {
+    width: 60%; /* Adjust as needed */
+    margin: auto; /* Center the table */
+}
+
+.container table th, .container table td {
+    padding: 8px; /* Reduce padding for cells */
+}
+
+.container table {
+    font-size: 0.9em; /* Make the font smaller */
+}
+
+.container table th:nth-child(1), .container table td:nth-child(1) { /* ID column */
+    width: 5%; /* Adjust width as needed */
+}
+
+.container table th:nth-child(2), .container table td:nth-child(2) { /* Expense Name column */
+    width: 30%; /* Adjust width as needed */
+}
+
+.container table th:nth-child(3), .container table td:nth-child(3) { /* Category column */
+    width: 25%; /* Adjust width as needed */
+}
+
+.container table th:nth-child(4), .container table td:nth-child(4) { /* Payment Method column */
+    width: 25%; /* Adjust width as needed */
+}
+
+.container table th:nth-child(5), .container table td:nth-child(5) { /* Amount column */
+    width: 10%; /* Adjust width as needed */
+}
+
+.container table th:nth-child(6), .container table td:nth-child(6) { /* Date column */
+    width: 10%; /* Adjust width as needed */
+}

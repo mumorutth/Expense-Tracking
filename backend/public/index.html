@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">Expense Tracker</h1>
+        <div class="row">
+            <!-- Left Column: Form and Table -->
+            <div class="col-md-6">
+                <form id="expense-form" method="POST">
+                    <div class="form-group">
+                        <label for="name">Expense Name:</label>
+                        <input type="text" class="form-control" id="expense_name" placeholder="Enter expense name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category:</label>
+                        <select class="form-control" id="category" >
+                            <!-- Categories will be dynamically added here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment-method">Payment Method:</label>
+                        <select class="form-control" id="payment-method" >
+                            <!-- Payment methods will be dynamically added here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount:</label>
+                        <input type="number" class="form-control" id="amount" placeholder="Enter amount" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Expense</button>
+                </form>
+
+                <h2 class="my-4">Expenses Table</h2>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>expense_name</th>
+                            <th>category</th>
+                            <th>payment_method</th>
+                            <th>amount</th>
+                            <th>date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-table-body">
+                        <!-- Dynamic rows will be added here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Right Column: Charts -->
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h2 class="my-4">Bar Chart</h2>
+                        <canvas id="barChart"></canvas>
+                    </div>
+                    <div class="col-md-12">
+                        <h2 class="my-4">Pie Chart</h2>
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+//Fetch Categies to populate category dropdown    
+   async function fetchCategories() {
+    try {
+        const response = await fetch('/api/categories');
+        const categories = await response.json();
+        if (Array.isArray(categories)) {
+        const categorySelect = document.getElementById('category');
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id; // Ensure the id is correct
+            option.textContent = category.name; // Ensure the name is correct
+            categorySelect.appendChild(option);
+        });
+    } else {
+            console.error('Error fetching categories:', categories.error);
+        }
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+    }
+}
+//Fetch payment methods To Populate Dropdown
+async function fetchPaymentMethods() {
+    try {
+        const response = await fetch('/api/payment-methods');
+        const paymentMethods = await response.json();
+        if (Array.isArray(paymentMethods)) {
+        const paymentMethodSelect = document.getElementById('payment-method');
+        paymentMethods.forEach(method => {
+            const option = document.createElement('option');
+            option.value = method.id; // Ensure the id is correct
+            option.textContent = method.method; // Ensure the method name is correct
+            paymentMethodSelect.appendChild(option);
+        });
+    } else {
+            console.error('Error fetching payment methods:', paymentMethods.error);
+        }  
+    } catch (error) {
+        console.error('Error fetching payment methods:', error);
+    }
+}
+
+    // Fetch expenses and populate the table
+async function fetchExpenses() {
+    try {
+        const response = await fetch('/api/expenses');
+        const expenses = await response.json();
+        const expensesTableBody = document.getElementById('expenses-table-body');
+        expensesTableBody.innerHTML = ''; // Clear the table body before populating
+
+        expenses.forEach(expense => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${expense.id}</td>
+        <td>${expense.expense_name}</td>  <!-- Should match the property in your data -->
+        <td>${expense.category}</td>      <!-- Should match the property in your data -->
+        <td>${expense.payment_method}</td><!-- Should match the property in your data -->
+        <td>${expense.amount}</td>
+        <td>${new Date(expense.date).toLocaleDateString()}</td>
+        <td>
+            <button class="btn btn-danger" onclick="deleteExpense(${expense.id})">Delete</button>
+        </td>
+    `;
+    expensesTableBody.appendChild(row);
+});
+
+
+
+  // Function to handle the form submission
+  document.getElementById('expense-form').addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent default form submission
+
+        const expenseName = document.getElementById('expense_name').value; // Corrected ID
+        const category = document.getElementById('category').value;
+        const paymentMethod = document.getElementById('payment-method').value;
+        const amount = document.getElementById('amount').value;
+
+        try {
+            const response = await fetch('/api/expenses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    expense_name: expenseName,
+                    category,
+                    payment_method: paymentMethod,
+                    amount: parseFloat(amount),
+                }),
+            });
+
+            if (response.ok) {
+                // Clear the form fields
+                document.getElementById('expense-form').reset();
+                // Fetch and display the updated list of expenses
+                fetchExpenses();
+            } else {
+                console.error('Error adding expense:', await response.text());
+            }
+        } catch (error) {
+            console.error('Error adding expense:', error);
+        }
+    });
+ // Call updateCharts here after fetching expenses
+        updateCharts(expenses);
+    } catch (error) {
+        console.error('Error fetching expenses:', error);
+    }
+}
+
+// Function to update charts based on expenses
+function updateCharts(expenses) {
+    // Process data for the charts (you may want to adjust this logic)
+    const categories = {};
+    const paymentMethods = {};
+
+    expenses.forEach(expense => {
+        categories[expense.category] = (categories[expense.category] || 0) + expense.amount;
+        paymentMethods[expense.payment_method] = (paymentMethods[expense.payment_method] || 0) + expense.amount;
+    });
+
+    // Bar chart data
+    const barChartLabels = Object.keys(categories);
+    const barChartData = Object.values(categories);
+
+    // Pie chart data
+    const pieChartLabels = Object.keys(paymentMethods);
+    const pieChartData = Object.values(paymentMethods);
+
+    // Render Bar Chart
+    const barChartCtx = document.getElementById('barChart').getContext('2d');
+    new Chart(barChartCtx, {
+        type: 'bar',
+        data: {
+            labels: barChartLabels,
+            datasets: [{
+                label: 'Expenses by Category',
+                data: barChartData,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Render Pie Chart
+    const pieChartCtx = document.getElementById('pieChart').getContext('2d');
+    new Chart(pieChartCtx, {
+        type: 'pie',
+        data: {
+            labels: pieChartLabels,
+            datasets: [{
+                label: 'Expenses by Payment Method',
+                data: pieChartData,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Expenses by Payment Method'
+                }
+            }
+        }
+    });
+}
+
+// Call both fetch functions when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCategories();
+    fetchPaymentMethods();
+    fetchExpenses(); // Fetch expenses to display on page load
+});
+</script> 
+</body>
+</html>
